@@ -1,0 +1,835 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7PS — لوحة التحكم</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0a0e1a;
+    color: #e0e0e0;
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #0f1629 0%, #1a1f3a 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -1px;
+  }
+
+  .logo-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .logo-text span { color: #22c55e; }
+
+  .header-badge {
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.2);
+    color: #22c55e;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pulse-dot { animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 24px 32px;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, #111827 0%, #1a1f3a 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.15;
+  }
+
+  .stat-card.pending::before { background: #f59e0b; }
+  .stat-card.sent::before { background: #22c55e; }
+  .stat-card.failed::before { background: #ef4444; }
+  .stat-card.total::before { background: #6366f1; }
+
+  .stat-label {
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stat-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+
+  .stat-card.pending .stat-icon { background: rgba(245,158,11,0.15); color: #f59e0b; }
+  .stat-card.sent .stat-icon { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .stat-card.failed .stat-icon { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .stat-card.total .stat-icon { background: rgba(99,102,241,0.15); color: #6366f1; }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    color: #fff;
+  }
+
+  .toolbar {
+    padding: 0 32px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+
+  .btn-refresh {
+    background: rgba(99,102,241,0.12);
+    color: #818cf8;
+    border: 1px solid rgba(99,102,241,0.2);
+  }
+
+  .btn-refresh:hover { background: rgba(99,102,241,0.2); }
+
+  .btn-danger {
+    background: rgba(239,68,68,0.1);
+    color: #f87171;
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+
+  .btn-danger:hover { background: rgba(239,68,68,0.2); }
+
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+  }
+
+  .filter-label {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: rgba(255,255,255,0.04);
+    color: #888;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .filter-label:hover {
+    background: rgba(255,255,255,0.08);
+    color: #ccc;
+  }
+
+  .filter-active {
+    background: rgba(34,197,94,0.12) !important;
+    color: #22c55e !important;
+    border-color: rgba(34,197,94,0.25) !important;
+  }
+
+  .table-container { padding: 0 32px 32px; }
+
+  .table-wrap {
+    background: linear-gradient(135deg, #111827 0%, #141b2d 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+  thead { background: rgba(255,255,255,0.03); }
+
+  th {
+    text-align: right;
+    color: #666;
+    font-weight: 600;
+    padding: 14px 16px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 14px 16px;
+    color: #ccc;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+  }
+
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .type-image { background: rgba(59,130,246,0.12); color: #60a5fa; }
+  .type-video { background: rgba(168,85,247,0.12); color: #c084fc; }
+  .type-text { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .type-audio { background: rgba(245,158,11,0.12); color: #fbbf24; }
+  .type-file { background: rgba(156,163,175,0.12); color: #9ca3af; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .status-pending { background: rgba(245,158,11,0.12); color: #fbbf24; }
+  .status-sent { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .status-failed { background: rgba(239,68,68,0.12); color: #f87171; }
+  .status-deleted { background: rgba(156,163,175,0.12); color: #9ca3af; }
+
+  .content-preview {
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: #999;
+  }
+
+  .btn-sm {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    margin-left: 4px;
+  }
+
+  .btn-delete {
+    background: rgba(239,68,68,0.1);
+    color: #f87171;
+    border: 1px solid rgba(239,68,68,0.15);
+  }
+
+  .btn-delete:hover { background: rgba(239,68,68,0.25); }
+
+  .btn-view {
+    background: rgba(99,102,241,0.1);
+    color: #818cf8;
+    border: 1px solid rgba(99,102,241,0.15);
+  }
+
+  .btn-view:hover { background: rgba(99,102,241,0.25); }
+
+  .btn-wa-delete {
+    background: rgba(239,68,68,0.15);
+    color: #ff6b6b;
+    border: 1px solid rgba(239,68,68,0.25);
+  }
+
+  .btn-wa-delete:hover { background: rgba(239,68,68,0.35); }
+
+  .btn-sm:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #555;
+  }
+
+  .empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    gap: 8px;
+    color: #555;
+    font-size: 14px;
+  }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: #22c55e;
+    border-radius: 50%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .spinner { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  /* Modal Overlay */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-bg.active { display: flex; }
+
+  .modal {
+    background: #1a1f3a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 28px;
+    max-width: 520px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(255,255,255,0.06);
+    border: none;
+    color: #888;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .modal-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+  .modal-field {
+    margin-bottom: 14px;
+  }
+
+  .modal-field-label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  .modal-field-value {
+    font-size: 13px;
+    color: #ddd;
+    background: rgba(0,0,0,0.2);
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.04);
+    word-break: break-all;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.6;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .modal-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 16px; }
+    .toolbar { padding: 0 16px 12px; }
+    .table-container { padding: 0 16px 16px; }
+    th, td { padding: 10px 8px; font-size: 11px; }
+    .content-preview { max-width: 120px; }
+    .header { padding: 16px; }
+    .stat-value { font-size: 24px; }
+  }
+
+  .fade-in { opacity: 1; }
+  @media (prefers-reduced-motion: no-preference) {
+    .fade-in { animation: fadeIn 0.5s ease-out both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.1s; }
+    .delay-3 { animation-delay: 0.15s; }
+    .delay-4 { animation-delay: 0.2s; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="header fade-in">
+    <div class="logo">
+      <div class="logo-icon">7P</div>
+      <div class="logo-text"><span>7PS</span> — لوحة التحكم</div>
+    </div>
+    <div class="header-badge">
+      <span class="pulse-dot"></span>
+      متصل
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card pending fade-in delay-1">
+      <div class="stat-label"><span class="stat-icon">⏳</span> معلقة</div>
+      <div class="stat-value" id="stat-pending">—</div>
+    </div>
+    <div class="stat-card sent fade-in delay-2">
+      <div class="stat-label"><span class="stat-icon">✓</span> مرسلة</div>
+      <div class="stat-value" id="stat-sent">—</div>
+    </div>
+    <div class="stat-card failed fade-in delay-3">
+      <div class="stat-label"><span class="stat-icon">✕</span> فاشلة</div>
+      <div class="stat-value" id="stat-failed">—</div>
+    </div>
+    <div class="stat-card total fade-in delay-4">
+      <div class="stat-label"><span class="stat-icon">Σ</span> الإجمالي</div>
+      <div class="stat-value" id="stat-total">—</div>
+    </div>
+  </div>
+
+  <div class="toolbar fade-in">
+    <div class="section-title">📋 الرسائل</div>
+    <div class="toolbar-right">
+      <button class="btn btn-refresh" onclick="loadData()">↻ تحديث</button>
+      <button class="btn btn-danger" onclick="clearAllPending()">🗑 حذف المعلقة</button>
+    </div>
+  </div>
+
+  <div class="toolbar" style="padding-top:0;">
+    <div class="filter-tabs">
+      <button class="filter-label filter-active" id="fbtn-all" onclick="filterTable('all')">الكل</button>
+      <button class="filter-label" id="fbtn-pending" onclick="filterTable('pending')">⏳ معلقة</button>
+      <button class="filter-label" id="fbtn-sent" onclick="filterTable('sent')">✓ مرسلة</button>
+      <button class="filter-label" id="fbtn-failed" onclick="filterTable('failed')">✕ فاشلة</button>
+    </div>
+  </div>
+
+  <div class="table-container fade-in">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>النوع</th>
+            <th>المحتوى</th>
+            <th>الحالة</th>
+            <th>التاريخ</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr><td colspan="6"><div class="loading"><div class="spinner"></div> جاري التحميل...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="document.getElementById('modal-bg').classList.remove('active')">✕</button>
+      <div class="modal-title">📄 تفاصيل الرسالة</div>
+      <div id="modal-content"></div>
+      <div class="modal-actions" id="modal-actions"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SUPABASE_URL = 'https://czulcpfnmrlsmcywtzcy.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6dWxjcGZubXJsc21jeXd0emN5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODUzNzQ2MSwiZXhwIjoyMTA0MTEzNDYxfQ.DErefiKe2QAIyRw5RoE6Pgx3_T5EjcWRbdrFMkescyY';
+    const GREEN_API_INSTANCE = '710722741439';
+    const GREEN_API_TOKEN = '8ed7e9dc5f3a42998f9e6ad1bec590ffe432161ebae2400a9e';
+    const TARGET_GROUP = '120363410731694109@g.us';
+
+    const supaHeaders = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    };
+
+    let allData = [];
+    let currentFilter = 'all';
+
+    async function loadData() {
+      try {
+        const resp = await fetch(SUPABASE_URL + '/rest/v1/news_queue?order=created_at.desc&limit=200', { headers: supaHeaders });
+        allData = await resp.json();
+        if (!Array.isArray(allData)) allData = [];
+        updateStats();
+        renderTable();
+      } catch (err) {
+        showToast('⚠️ خطأ في الاتصال: ' + err.message);
+      }
+    }
+
+    function updateStats() {
+      const pending = allData.filter(r => r.status === 'pending').length;
+      const sent = allData.filter(r => r.status === 'sent').length;
+      const failed = allData.filter(r => r.status === 'failed').length;
+      document.getElementById('stat-pending').textContent = pending;
+      document.getElementById('stat-sent').textContent = sent;
+      document.getElementById('stat-failed').textContent = failed;
+      document.getElementById('stat-total').textContent = allData.length;
+    }
+
+    function getFiltered() {
+      if (currentFilter === 'all') return allData;
+      return allData.filter(r => r.status === currentFilter);
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('table-body');
+      const filtered = getFiltered();
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div><p>لا توجد رسائل</p></div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((r, i) => {
+        const typeClass = getTypeClass(r.media_type || r.post_type);
+        const typeLabel = getTypeLabel(r.media_type || r.post_type);
+        const statusClass = 'status-' + (r.status || 'pending');
+        const statusLabel = getStatusLabel(r.status);
+        const preview = (r.content_text || '').replace(/\n/g, ' ').substring(0, 60);
+        const date = r.created_at ? new Date(r.created_at).toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+        let actions = '<button class="btn-sm btn-view" onclick="viewItem(' + i + ')" title="عرض">👁</button>';
+
+        // Queue delete (pending only)
+        if (r.status === 'pending') {
+          actions += '<button class="btn-sm btn-delete" onclick="deleteFromQueue(\'' + r.id + '\')" title="حذف من القائمة">🗑</button>';
+        }
+
+        // WhatsApp delete (sent messages with wa_message_id)
+        if (r.status === 'sent' && r.wa_message_id) {
+          actions += '<button class="btn-sm btn-wa-delete" onclick="deleteFromWhatsApp(\'' + r.id + '\', \'' + r.wa_message_id + '\')" title="حذف من الواتساب والقائمة">🗑 واتساب</button>';
+        }
+
+        return '<tr>' +
+          '<td style="color:#555;font-family:monospace;">' + (i + 1) + '</td>' +
+          '<td><span class="type-badge ' + typeClass + '">' + typeLabel + '</span></td>' +
+          '<td><div class="content-preview">' + escapeHtml(preview) + '</div></td>' +
+          '<td><span class="status-badge ' + statusClass + '">' + statusLabel + '</span></td>' +
+          '<td style="font-size:11px;color:#777;white-space:nowrap;">' + date + '</td>' +
+          '<td style="white-space:nowrap;">' + actions + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function filterTable(status) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-tabs .filter-label').forEach(b => b.classList.remove('filter-active'));
+      document.getElementById('fbtn-' + status).classList.add('filter-active');
+      renderTable();
+    }
+
+    // === DELETE FROM QUEUE ONLY ===
+    async function deleteFromQueue(id) {
+      if (!confirm('حذف هذه الرسالة من القائمة؟')) return;
+      try {
+        await fetch(SUPABASE_URL + '/rest/v1/news_queue?id=eq.' + id, { method: 'DELETE', headers: supaHeaders });
+        showToast('🗑️ تم حذف الرسالة من القائمة');
+        loadData();
+      } catch (err) {
+        showToast('⚠️ خطأ في الحذف');
+      }
+    }
+
+    // === DELETE FROM WHATSAPP + SUPABASE ===
+    async function deleteFromWhatsApp(id, waMessageId) {
+      if (!confirm('حذف هذه الرسالة من جروب الواتساب والقائمة؟')) return;
+      try {
+        // Step 1: Delete from WhatsApp group
+        const greenUrl = 'https://api.green-api.com/waInstance' + GREEN_API_INSTANCE + '/deleteMessage/' + GREEN_API_TOKEN;
+        const waResp = await fetch(greenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: TARGET_GROUP,
+            idMessage: waMessageId
+          })
+        });
+
+        if (!waResp.ok) {
+          const errText = await waResp.text();
+          showToast('⚠️ فشل حذف الرسالة من واتساب: ' + errText);
+          return;
+        }
+
+        // Step 2: Update status in Supabase
+        await fetch(SUPABASE_URL + '/rest/v1/news_queue?id=eq.' + id, {
+          method: 'PATCH',
+          headers: supaHeaders,
+          body: JSON.stringify({ status: 'deleted' })
+        });
+
+        showToast('✅ تم حذف الرسالة من الواتساب والقائمة');
+        loadData();
+      } catch (err) {
+        showToast('⚠️ خطأ: ' + err.message);
+      }
+    }
+
+    // === CLEAR ALL PENDING ===
+    async function clearAllPending() {
+      const pending = allData.filter(r => r.status === 'pending').length;
+      if (pending === 0) { showToast('لا توجد رسائل معلقة'); return; }
+      if (!confirm('حذف كل الرسائل المعلقة (' + pending + ')؟')) return;
+      try {
+        await fetch(SUPABASE_URL + '/rest/v1/news_queue?status=eq.pending', { method: 'DELETE', headers: supaHeaders });
+        showToast('🗑️ تم حذف ' + pending + ' رسالة');
+        loadData();
+      } catch (err) {
+        showToast('⚠️ خطأ');
+      }
+    }
+
+    // === VIEW ITEM MODAL ===
+    function viewItem(index) {
+      const filtered = getFiltered();
+      const r = filtered[index];
+      if (!r) return;
+
+      let html = '';
+      html += field('🆔 المعرّف', r.id);
+      html += field('📌 النوع', (r.media_type || r.post_type || 'text'));
+      html += field('📊 الحالة', getStatusLabel(r.status));
+      html += field('📅 التاريخ', r.created_at ? new Date(r.created_at).toLocaleString('ar-EG') : '—');
+      if (r.wa_message_id) html += field('💬 معرّف واتساب', r.wa_message_id);
+      if (r.media_url) html += field('🔗 رابط الميديا', r.media_url);
+      html += field('📝 المحتوى', (r.content_text || 'فارغ').substring(0, 800));
+
+      document.getElementById('modal-content').innerHTML = html;
+
+      // Modal actions
+      let actions = '';
+      if (r.status === 'pending') {
+        actions += '<button class="btn btn-danger" onclick="deleteFromQueue(\'' + r.id + '\');document.getElementById(\'modal-bg\').classList.remove(\'active\');">🗑 حذف من القائمة</button>';
+      }
+      if (r.status === 'sent' && r.wa_message_id) {
+        actions += '<button class="btn btn-danger" style="background:rgba(239,68,68,0.2);" onclick="deleteFromWhatsApp(\'' + r.id + '\', \'' + r.wa_message_id + '\');document.getElementById(\'modal-bg\').classList.remove(\'active\');">🗑 حذف من واتساب</button>';
+      }
+      document.getElementById('modal-actions').innerHTML = actions;
+      document.getElementById('modal-bg').classList.add('active');
+    }
+
+    function field(label, value) {
+      return '<div class="modal-field"><div class="modal-field-label">' + label + '</div><div class="modal-field-value">' + escapeHtml(String(value)) + '</div></div>';
+    }
+
+    function closeModal(e) {
+      if (e.target.id === 'modal-bg') document.getElementById('modal-bg').classList.remove('active');
+    }
+
+    // === HELPERS ===
+    function getTypeClass(type) {
+      if (!type) return 'type-text';
+      const t = type.toLowerCase();
+      if (t.indexOf('image') !== -1) return 'type-image';
+      if (t.indexOf('video') !== -1) return 'type-video';
+      if (t.indexOf('audio') !== -1) return 'type-audio';
+      if (t.indexOf('file') !== -1 || t.indexOf('document') !== -1) return 'type-file';
+      return 'type-text';
+    }
+
+    function getTypeLabel(type) {
+      if (!type) return 'نص';
+      const t = type.toLowerCase();
+      if (t.indexOf('image') !== -1) return '🖼 صورة';
+      if (t.indexOf('video') !== -1) return '🎬 فيديو';
+      if (t.indexOf('audio') !== -1) return '🎵 صوت';
+      if (t.indexOf('file') !== -1 || t.indexOf('document') !== -1) return '📎 ملف';
+      return '📝 نص';
+    }
+
+    function getStatusLabel(status) {
+      if (status === 'pending') return '⏳ معلقة';
+      if (status === 'sent') return '✅ مرسلة';
+      if (status === 'failed') return '❌ فاشلة';
+      if (status === 'deleted') return '🗑 محذوفة';
+      return status || '—';
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'flex';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    // Auto-load & refresh every 30s
+    loadData();
+    setInterval(loadData, 30000);
+  </script>
+
+</body>
+</html>
